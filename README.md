@@ -1,1 +1,3 @@
 # MorseCodeFPGA
+
+We code stuff
