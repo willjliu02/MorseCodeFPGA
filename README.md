@@ -15,3 +15,7 @@ where a 1 is an on signal and a 0 is an off signal.
 1) Create a bit file that contains morse code
 2) Run all boxes down to the translate function
 3) Call the translate function on the name of the bit file. The output will be printed to the console. If you'd like to change that, then send in the name of an output file.
+
+## Encoder Details
+
+### How To:
