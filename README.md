@@ -1,5 +1,8 @@
 # MorseCodeFPGA
 
+## Project Proposal
+[Document](https://docs.google.com/document/d/1Nj2nfRw68O-NiOnoTTRfmW-j80fDnC_wfzZ5VHfgZU8/edit?usp=sharing)
+
 ## Background:
 Morse code relies on the metric of a “beat” to identify letters, words, and spaces. Based on this metric, we have the following table:
 ![Table of the true beat lengths for a symbol](/read_me_refs/beat_table.png)
