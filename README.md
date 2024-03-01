@@ -25,3 +25,6 @@ where a 1 is an on signal and a 0 is an off signal.
 ## Encoder Details
 
 ### How To:
+1) Create a txt file with your given text input (create in same directory as project)
+2) Run all boxes and enter in the text file name you want to be encoded
+3) Output will be printed and produced in a txt file called output.txt
