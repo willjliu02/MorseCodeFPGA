@@ -9,6 +9,8 @@
 
 #define PROCESS_H
 
+#include "module.h"
+
 enum Meaning{
     // Symbol
     DOT = 0,
@@ -24,6 +26,17 @@ enum Meaning{
 
 };
 
+bit PREV_BIT = 0;
+int NUM_OF_BITS = 0;
+
+/**
+ * Determines what the last string of bit B means
+ * 
+ * Returns:
+ * The information as one of the discrete meanings above.
+*/
+void parsePrevInputs(Meaning *inputMeaning);
+
 /**
  * Processes some parsed information and interacts with the "letter" state machine
  * 
@@ -32,6 +45,17 @@ enum Meaning{
  * Returns:
  * Either a letter, a letter + a space, or None
 */
-char process(Meaning meaning);
+void process(Meaning meaning, char* ret_letter);
+
+/**
+ * Processes the next bit
+ * 
+ * Params:
+ * - bit(int): either a 0 or 1 that is either an "on" or "off" signal from the sender
+ * 
+ * Returns:
+ * A letter if we have reached the end of a letter/word, else None
+*/
+void processNextBit(bit bit, char* ret_letter);
 
 #endif

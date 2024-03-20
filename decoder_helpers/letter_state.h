@@ -9,7 +9,11 @@
 
 #define LETTER_STATE_H
 
-char* LETTERS = "ETIANMSURWDKGOHVF L PJBXCYZQ";
+#include "module.h"
+
+const char* LETTERS = "ETIANMSURWDKGOHVF L PJBXCYZQ";
+letter MAX_LETTER = 28;
+letter CURRENT_LETTER = 0;
 
 /**
  * Initializes the machine to run anew
@@ -20,9 +24,9 @@ void initLetters();
  * Shifts the state machine to the next letter
  * 
  * Params:
- * - isDash(bool): is really some bit indiciating if the incoming symbol is a dot or dash
+ * - isDash(short): is really some bit indiciating if the incoming symbol is a dot or dash
 */
-void shiftLetter(bool isDash);
+void shiftLetter(bit isDash);
 
 /**
  * Gets the letter that the current state machine is on
@@ -31,11 +35,11 @@ void shiftLetter(bool isDash);
  * The length 1 string that has the character
  * None, if CURRENT_LETTER is not in the range of the list of letters
 */
-char getLetter();
+void getLetter(char* next_letter);
 
 /**
  * Takes care of any leftover letters in the state machine
 */
-char finalize();
+void finalize(char* next_letter);
 
 #endif
