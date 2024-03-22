@@ -13,14 +13,15 @@
 void parsePrevInputs(Meaning *inputMeaning) {
     // TODO: consider changing this from division to multiple or something else entirely
     // TODO: idea: multiplication in removeNoise (mulitply by beat values)
-    beats* beat_dur;
+    beat beat_dur;
 
-    removeNoise(NUM_OF_BITS / BEAT_DURATION, beat_dur);
+    // TODO: fix to match beat_decoder
+    removeNoise(NUM_OF_BITS, &beat_dur);
 
     Meaning meaning;
 
     if (PREV_BIT) {
-        switch (*beat_dur)
+        switch (beat_dur)
         {
             case 1:
                 meaning = Meaning::DOT;
@@ -33,7 +34,7 @@ void parsePrevInputs(Meaning *inputMeaning) {
                 break;
         }
     } else {
-        switch (*beat_dur)
+        switch (beat_dur)
         {
             case 1:
                 meaning = Meaning::NEXT_SYMBOL;
@@ -53,9 +54,9 @@ void parsePrevInputs(Meaning *inputMeaning) {
     *inputMeaning = meaning;
 }
 
-void process(Meaning meaning, char* ret_letter) {
+void process(Meaning *meaning, char* ret_letter) {
     char ret_let[3] = "  ";
-    char* tmp_letter;
+    char tmp_letter;
 
     switch(meaning){
         case Meaning::DOT:
@@ -67,31 +68,46 @@ void process(Meaning meaning, char* ret_letter) {
             ret_let[0] = '\0';
             break;
         case Meaning::NEXT_LETTER:
-            getLetter(tmp_letter);
-            ret_let[0] = *tmp_letter;
+            getLetter(&tmp_letter);
+            ret_let[0] = tmp_letter;
             ret_let[1] = '\0';
             break;
         case Meaning::NEXT_WORD:
-            getLetter(tmp_letter);
-            ret_let[0] = *tmp_letter;
+            getLetter(&tmp_letter);
+            ret_let[0] = tmp_letter;
             break;
     }
 
     ret_letter = letter_temp;
 }
 
-void processNextBit(bit bit, ret_ptr ret_char) {
-    ret_ptr tmp_ret = NULL;
+void processNextBit(AXIStream inBit, AXIStream outLetter) {
+#pragma HLS INTERFACE axis port=inBit
+#pragma HLS INTERFACE axis port=outLetter
+#pragma HLS INTERFACE s_axilite port=return
 
-    if (bit == PREV_BIT) {
-        ++NUM_OF_BITS;
-    } else {
-        Meaning meaning = parsePrevInputs();
-        tmp_ret = process(meaning);
+    retPtr tmpRet = NULL;
+    AXIVal tmp;
 
-        PREV_BIT = bit;
-        NUM_OF_BITS = 1;
+    do {
+        inBit.read(tmp);
 
-        ret_char = tmp_ret;
-    }
+        bit bitVal = tmp.data.to_int();
+
+        if (bitVal == PREV_BIT) {
+            ++NUM_OF_BITS;
+        } else {
+            Meaning meaning;
+            parsePrevInputs(&meaning);
+
+            process(meaning, tmpRet);
+
+            PREV_BIT = bitVal;
+            NUM_OF_BITS = 1;
+
+            tmp.data = tmpRet;
+
+            outLetter.write(tmp);
+        }
+    } while (!tmp.last);    
 }

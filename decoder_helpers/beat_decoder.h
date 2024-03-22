@@ -12,19 +12,23 @@
 #include "module.h"
 
 // probably change since hardware is bad at floats
-float BEAT_ERROR_RANGE = 0.15;
+int BEAT_ERROR_RANGE = 3; // describes the 2^-BEAT_ERROR_RANGE error
 int BEAT_DURATION = 1;
 /**
  * Removes noise from the beat_duration
  * 
  * Params:
- * - beat_nums(float): the rough number of beats
+ * - beat_nums(float): the rough number of beat
 */
-void removeNoise(beats beatNums, beats *beat_dur);
+void removeNoise(beat *numOfbeat, beat *beat_dur);
 
 /**
- * Adjusts the error range and the beat duration
+ * Adjusts the beat duration
+ *  
+ * Params:
+ * - expNumBits (beat): the expecred number of bits
+ * - recNumBits (beat): the actual received number of bits
 */
-void adjustFactors();
+void adjustFactors(beat *expNumBits, beat *recNumBits);
 
 #endif

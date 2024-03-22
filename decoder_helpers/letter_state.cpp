@@ -11,11 +11,11 @@ void initLetters() {
     CURRENT_LETTER = 0;
 }
 
-void shiftLetter(short isDash) {
+void shiftLetter(bit isDash) {
     CURRENT_LETTER = CURRENT_LETTER * 2 + isDash;
 }
 
-const char getLetter() {
+void getLetter(char* next_letter) {
     char ret_letter;
     if (CURRENT_LETTER > 0 && CURRENT_LETTER <= MAX_LETTER) {
         ret_letter = LETTERS[CURRENT_LETTER - 1];
@@ -25,9 +25,9 @@ const char getLetter() {
 
     CURRENT_LETTER = 0;
 
-    return ret_letter;
+    *next_letter = ret_letter;
 }
 
-const char finalize() {
-    return getLetter();
+void finalize(char* next_letter) {
+    getLetter(next_letter);
 }

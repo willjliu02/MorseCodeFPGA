@@ -11,6 +11,14 @@
 
 #include "module.h"
 
+#include <ap_axi_sdata.h>
+#include <hls_stream.h>
+
+typedef char* retPtr;
+typedef ap_axis<32,2,5,6> AXIVal;
+typedef hls::stream<AXIVal>& AXIStream;
+
+
 enum Meaning{
     // Symbol
     DOT = 0,
@@ -45,7 +53,7 @@ void parsePrevInputs(Meaning *inputMeaning);
  * Returns:
  * Either a letter, a letter + a space, or None
 */
-void process(Meaning meaning, char* ret_letter);
+void process(Meaning *meaning, char* retLetter);
 
 /**
  * Processes the next bit
@@ -56,6 +64,6 @@ void process(Meaning meaning, char* ret_letter);
  * Returns:
  * A letter if we have reached the end of a letter/word, else None
 */
-void processNextBit(bit bit, char* ret_letter);
+void processNextBit(AXIStream inBit, AXIStream outLetter);
 
 #endif

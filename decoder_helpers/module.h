@@ -5,13 +5,13 @@
  * Description: Localizes types to allow for ease of transfer between C++ and HLS
 */
 
+
 #ifndef MODULE_H
 
 #define MODULE_H
 
 typedef short bit;
-typedef short beats;
+typedef short beat;
 typedef short letter;
-typedef char* ret_ptr;
 
 #endif
