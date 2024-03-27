@@ -20,7 +20,7 @@ int BEAT_DURATION = 1;
  * Params:
  * - beat_nums(float): the rough number of beat
 */
-void removeNoise(beat *numOfbeat, beat *beat_dur);
+void removeNoise(beat numOfbeat, beat beat_dur);
 
 /**
  * Adjusts the beat duration
@@ -29,6 +29,6 @@ void removeNoise(beat *numOfbeat, beat *beat_dur);
  * - expNumBits (beat): the expecred number of bits
  * - recNumBits (beat): the actual received number of bits
 */
-void adjustFactors(beat *expNumBits, beat *recNumBits);
+void adjustFactors(beat expNumBits, beat recNumBits);
 
 #endif

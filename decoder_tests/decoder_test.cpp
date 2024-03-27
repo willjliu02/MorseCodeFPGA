@@ -1,19 +1,28 @@
 // include files
 
-#include "../decoder_helpers/module.h"
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <sstream>
-#include "../decoder_helpers/process.h"
+
+#include <ap_axi_sdata.h>
+#include <hls_stream.h>
+
+typedef char* retPtr;
+typedef ap_axis<32,2,5,6> AXIVal;
+typedef hls::stream<AXIVal> AXIStream;
+typedef short bit;
+typedef short beat;
+typedef short letter;
+
 using namespace std;
 
 #define ZERO short('0')
 
-
+void processNextBit(AXIStream& inBit, AXIStream& outLetter);
 
 // make a process test method that runs all the info in
-void testProcess(char* inputName, char* goldenName){
+int testProcess(char* inputName, char* goldenName){
     AXIStream inBit, outLetter;
     AXIVal in_tmp, out_tmp;
     char inputLine[100], outputLine[100], goldenLine[100];
@@ -55,9 +64,9 @@ void testProcess(char* inputName, char* goldenName){
                 break;
             }
 
-            char outLetter = out_tmp.data.to_char()
+            char outLetter = out_tmp.data.to_char();
             if (outLetter != goldenLine[i]) {
-                cout << "ERROR: results mismatch. Expected: " << goldenLine[i] << " Received: " outLetter <<  << endl;
+                cout << "ERROR: results mismatch. Expected: " << goldenLine[i] << " Received: " << outLetter << endl;
                 hasErrors = true;
             }
         }

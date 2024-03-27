@@ -10,13 +10,13 @@
 #include "beat_decoder.h"
 #include <string.h>
 
-void parsePrevInputs(Meaning *inputMeaning) {
+void parsePrevInputs(Meaning inputMeaning) {
     // TODO: consider changing this from division to multiple or something else entirely
     // TODO: idea: multiplication in removeNoise (mulitply by beat values)
     beat beat_dur;
 
     // TODO: fix to match beat_decoder
-    removeNoise(NUM_OF_BITS, &beat_dur);
+    removeNoise(NUM_OF_BITS, beat_dur);
 
     Meaning meaning;
 
@@ -51,10 +51,10 @@ void parsePrevInputs(Meaning *inputMeaning) {
         }
     }
 
-    *inputMeaning = meaning;
+    inputMeaning = meaning;
 }
 
-void process(Meaning *meaning, char* ret_letter) {
+void process(Meaning meaning, char* ret_letter) {
     char ret_let[3] = "  ";
     char tmp_letter;
 
@@ -81,7 +81,7 @@ void process(Meaning *meaning, char* ret_letter) {
     ret_letter = letter_temp;
 }
 
-void processNextBit(AXIStream inBit, AXIStream outLetter) {
+void processNextBit(AXIStream& inBit, AXIStream& outLetter) {
 #pragma HLS INTERFACE axis port=inBit
 #pragma HLS INTERFACE axis port=outLetter
 #pragma HLS INTERFACE s_axilite port=return

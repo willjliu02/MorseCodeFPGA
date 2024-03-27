@@ -7,7 +7,7 @@
 
 #include "beat_decoder.h"
 
-void removeNoise(beat *numBits, beat *beatDur) {
+void removeNoise(beat numBits, beat beatDur) {
     // use bit shifting to the right to do the math
     // x >> 3 = 12.5% of x
     beat numBeats[3] = {1, 3, 7};
@@ -26,21 +26,21 @@ void removeNoise(beat *numBits, beat *beatDur) {
         }
         
 
-        if (*numBits < highRange && *numBits >= lowRange) {
-            *beatDur = numBeats[i];
-            adjustFactors(&center, numBits);
+        if (numBits < highRange && numBits >= lowRange) {
+            beatDur = numBeats[i];
+            adjustFactors(center, numBits);
             return;
         }
     }
 
-    *beatDur = -1;
+    beatDur = -1;
 }
 
-void adjustFactors(beat *expNumBits, beat *recNumBits) {
+void adjustFactors(beat expNumBits, beat recNumBits) {
     // goal: adjust the beat duration to better include the beats
 
     // calculates the difference between the received and expected bits
     // divides that by 4, so that we get some shift in the right direction
     // then uses this number to adjust the beat duration
-    BEAT_DURATION += (*expNumBits - *recNumBits) >> 2;
+    BEAT_DURATION += (expNumBits - recNumBits) >> 2;
 }

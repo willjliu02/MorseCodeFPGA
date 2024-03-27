@@ -16,7 +16,7 @@
 
 typedef char* retPtr;
 typedef ap_axis<32,2,5,6> AXIVal;
-typedef hls::stream<AXIVal>& AXIStream;
+typedef hls::stream<AXIVal> AXIStream;
 
 
 enum Meaning{
@@ -43,7 +43,7 @@ int NUM_OF_BITS = 0;
  * Returns:
  * The information as one of the discrete meanings above.
 */
-void parsePrevInputs(Meaning *inputMeaning);
+void parsePrevInputs(Meaning inputMeaning);
 
 /**
  * Processes some parsed information and interacts with the "letter" state machine
@@ -53,7 +53,7 @@ void parsePrevInputs(Meaning *inputMeaning);
  * Returns:
  * Either a letter, a letter + a space, or None
 */
-void process(Meaning *meaning, char* retLetter);
+void process(Meaning meaning, char* retLetter);
 
 /**
  * Processes the next bit
@@ -64,6 +64,6 @@ void process(Meaning *meaning, char* retLetter);
  * Returns:
  * A letter if we have reached the end of a letter/word, else None
 */
-void processNextBit(AXIStream inBit, AXIStream outLetter);
+void processNextBit(AXIStream& inBit, AXIStream& outLetter);
 
 #endif
