@@ -23,7 +23,7 @@ const char* encode_symbol_separator() {
 }
 
 const char* encode_word_separator() {
-    return "000000";
+    return "0000000";
 }
 
 const char* encode_letter_separator() {
