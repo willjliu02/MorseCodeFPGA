@@ -14,8 +14,8 @@ typedef short bit;
 typedef short beat;
 typedef short letter;
 typedef char* retPtr;
-// typedef ap_axis<32,2,5,6> AXIVal;
-// typedef hls::stream<AXIVal> AXIStream;
+// typedef  AXIVal;
+// typedef hls::stream<ap_axis<32,2,5,6>> AXIStream;
 typedef char* AXIVal;
 typedef char* AXIStream;
 
@@ -78,7 +78,7 @@ void adjustFactors(beat expNumBits, beat recNumBits) {
     BEAT_DURATION += (expNumBits - recNumBits) >> 2;
 }
 
-void removeNoise(beat numBits, beat beatDur) {
+beat removeNoise(beat numBits) {
     // use bit shifting to the right to do the math
     // x >> 3 = 12.5% of x
     beat numBeats[3] = {1, 3, 7};
@@ -98,25 +98,21 @@ void removeNoise(beat numBits, beat beatDur) {
         
 
         if (numBits < highRange && numBits >= lowRange) {
-            beatDur = numBeats[i];
             adjustFactors(center, numBits);
-            return;
+            return numBeats[i];
         }
     }
 
-    beatDur = -1;
+    return -1;
 }
 
 
 /* ------------------------------- PROCESS -------------------------------- */
 
-void parsePrevInputs(Meaning inputMeaning) {
+Meaning parsePrevInputs() {
     // TODO: consider changing this from division to multiple or something else entirely
     // TODO: idea: multiplication in removeNoise (mulitply by beat values)
-    beat beat_dur;
-
-    // TODO: fix to match beat_decoder
-    removeNoise(NUM_OF_BITS, beat_dur);
+    beat beat_dur = removeNoise(NUM_OF_BITS);
 
     Meaning meaning;
 
@@ -151,7 +147,7 @@ void parsePrevInputs(Meaning inputMeaning) {
         }
     }
 
-    inputMeaning = meaning;
+    return meaning;
 }
 
 void process(Meaning meaning, char* ret_letter) {
@@ -183,13 +179,13 @@ void process(Meaning meaning, char* ret_letter) {
     ret_letter = ret_let;
 }
 
-// void processNextBit(AXIStream& inBit, AXIStream& outLetter) {
+// void processNextBit(hls::stream<ap_axis<32,2,5,6>>& inBit, hls::stream<ap_axis<32,2,5,6>>& outLetter) {
 // #pragma HLS INTERFACE axis port=inBit
 // #pragma HLS INTERFACE axis port=outLetter
 // #pragma HLS INTERFACE s_axilite port=return
 
 //     retPtr tmpRet = nullptr;
-//     AXIVal tmp;
+//     ap_axis<32,2,5,6> tmp;
 
 //     do {
 //         inBit.read(tmp);
@@ -223,8 +219,9 @@ int main() {
         if (bitVal == PREV_BIT) {
             ++NUM_OF_BITS;
         } else {
-            Meaning meaning;
-            parsePrevInputs(meaning);
+            Meaning meaning = parsePrevInputs();
+            
+            std::cout << meaning << std::endl;
 
             process(meaning, letters);
 
@@ -233,5 +230,8 @@ int main() {
         }
     }
 
-    std::cout << letters << std::endl;
+    finalize(letters);
+
+
+    std::cout << letters[0] << std::endl;
 }

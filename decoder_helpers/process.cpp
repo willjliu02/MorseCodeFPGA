@@ -56,7 +56,7 @@ void parsePrevInputs(Meaning inputMeaning) {
 
 void process(Meaning meaning, char* ret_letter) {
     char ret_let[3] = "  ";
-    char tmp_letter;
+    char *tmp_letter;
 
     switch(meaning){
         case Meaning::DOT:
@@ -68,17 +68,17 @@ void process(Meaning meaning, char* ret_letter) {
             ret_let[0] = '\0';
             break;
         case Meaning::NEXT_LETTER:
-            getLetter(&tmp_letter);
-            ret_let[0] = tmp_letter;
+            getLetter(tmp_letter);
+            ret_let[0] = *tmp_letter;
             ret_let[1] = '\0';
             break;
         case Meaning::NEXT_WORD:
-            getLetter(&tmp_letter);
-            ret_let[0] = tmp_letter;
+            getLetter(tmp_letter);
+            ret_let[0] = *tmp_letter;
             break;
     }
 
-    ret_letter = letter_temp;
+    ret_letter = ret_let;
 }
 
 void processNextBit(AXIStream& inBit, AXIStream& outLetter) {
@@ -98,7 +98,7 @@ void processNextBit(AXIStream& inBit, AXIStream& outLetter) {
             ++NUM_OF_BITS;
         } else {
             Meaning meaning;
-            parsePrevInputs(&meaning);
+            parsePrevInputs(meaning);
 
             process(meaning, tmpRet);
 
