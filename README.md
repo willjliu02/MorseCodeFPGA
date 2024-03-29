@@ -11,6 +11,7 @@ The letters are organized in the form of a binary tree roughly in the order from
 
 ## More Detailed Information
 [Formal Proposal Document](https://docs.google.com/document/d/1Nj2nfRw68O-NiOnoTTRfmW-j80fDnC_wfzZ5VHfgZU8/edit?usp=sharing)
+[Second Project Update](https://docs.google.com/document/d/1_Po3Trma6acqfvD53LwHgvnLtOSarWcZHR8rateOmck/edit?usp=sharing)
 
 ## Decoder Details:
 This is the decoder aspect of the morse code translator, so it takes information in the form of morse code and
@@ -22,9 +23,21 @@ where a 1 is an on signal and a 0 is an off signal.
 2) Run all boxes down to the translate function
 3) Call the translate function on the name of the bit file. The output will be printed to the console. If you'd like to change that, then send in the name of an output file.
 
+### PL Implementation:
+The function that was moved over from PS to PL was the processNextBit function. The hardware code can be seen in the process_hw.cpp program.The status of this part is that the code is able to be synthesized in HLS, but has run into a memory dependency with one of the AXI classes. 
+
+### Status till Completion:
+What is left to complete after this is simply the filter, which will be our last PL implementation, and then the use of a python library to take in audio and to convert that into bits that will be passed to hardware. This leaves the decoder at around 60% complete.
+
 ## Encoder Details
 
 ### How To:
 1) Create a txt file with your given text input (create in same directory as project)
 2) Run all boxes and enter in the text file name you want to be encoded
 3) Output will be printed and produced in a txt file called output.txt
+
+### PL Implementation:
+The function that was moved over to PS from PL was the encode_text function. The hardware code can be found in encoder.cpp. The status of this is that there is a pointer error that is preventing the encoder from being synthesized.
+
+### Status till Completion:
+What is left to complete after this is simply to add an IP to interact and make the morse code light up. This puts the encoder at something like 80% complete.
