@@ -5,19 +5,14 @@
  * Description: Processes a sequence of bits and turns it into a string
 */
 
-// #include <ap_axi_sdata.h>
-// #include <hls_stream.h>
-
-#include <iostream>
+#include <ap_axi_sdata.h>
+#include <hls_stream.h>
+// #include <iostream>
 
 typedef short bit;
 typedef short beat;
 typedef short letter;
 typedef char* retPtr;
-// typedef  AXIVal;
-// typedef hls::stream<ap_axis<32,2,5,6>> AXIStream;
-typedef char* AXIVal;
-typedef char* AXIStream;
 
 enum Meaning{
     // Symbol
@@ -179,59 +174,58 @@ void process(Meaning meaning, char* ret_letter) {
     ret_letter = ret_let;
 }
 
-// void processNextBit(hls::stream<ap_axis<32,2,5,6>>& inBit, hls::stream<ap_axis<32,2,5,6>>& outLetter) {
-// #pragma HLS INTERFACE axis port=inBit
-// #pragma HLS INTERFACE axis port=outLetter
-// #pragma HLS INTERFACE s_axilite port=return
+void processNextBit(hls::stream<ap_axis<32,2,5,6>>& inBit, hls::stream<ap_axis<32,2,5,6>>& outLetter) {
+#pragma HLS INTERFACE axis port=inBit
+#pragma HLS INTERFACE axis port=outLetter
+#pragma HLS INTERFACE s_axilite port=return
 
-//     retPtr tmpRet = nullptr;
-//     ap_axis<32,2,5,6> tmp;
+    retPtr tmpRet = nullptr;
+    ap_axis<32,2,5,6> tmp;
 
-//     do {
-//         inBit.read(tmp);
+    do {
+        inBit.read(tmp);
 
-//         bit bitVal = tmp.data.to_int();
-
-//         if (bitVal == PREV_BIT) {
-//             ++NUM_OF_BITS;
-//         } else {
-//             Meaning meaning;
-//             parsePrevInputs(meaning);
-
-//             process(meaning, tmpRet);
-
-//             PREV_BIT = bitVal;
-//             NUM_OF_BITS = 1;
-
-//             tmp.data = tmpRet;
-
-//             outLetter.write(tmp);
-//         }
-//     } while (!tmp.last);    
-// }
-int main() {
-    bit bytes[100] = {1, 0, 1, 1, 1, 0, 0, 0};
-    char letters[100];
-
-    for (int i = 0; i < 8; ++i) {
-        bit bitVal = bytes[i];
+        bit bitVal = tmp.data.to_int();
 
         if (bitVal == PREV_BIT) {
             ++NUM_OF_BITS;
         } else {
             Meaning meaning = parsePrevInputs();
-            
-            std::cout << meaning << std::endl;
 
-            process(meaning, letters);
+            process(meaning, tmpRet);
 
             PREV_BIT = bitVal;
             NUM_OF_BITS = 1;
+
+            tmp.data = tmpRet;
+
+            outLetter.write(tmp);
         }
-    }
-
-    finalize(letters);
-
-
-    std::cout << letters[0] << std::endl;
+    } while (!tmp.last);    
 }
+// int main() {
+//     bit bytes[100] = {1, 0, 1, 1, 1, 0, 0, 0};
+//     char letters[100];
+
+//     for (int i = 0; i < 8; ++i) {
+//         bit bitVal = bytes[i];
+
+//         if (bitVal == PREV_BIT) {
+//             ++NUM_OF_BITS;
+//         } else {
+//             Meaning meaning = parsePrevInputs();
+            
+//             std::cout << meaning << std::endl;
+
+//             process(meaning, letters);
+
+//             PREV_BIT = bitVal;
+//             NUM_OF_BITS = 1;
+//         }
+//     }
+
+//     finalize(letters);
+
+
+//     std::cout << letters[0] << std::endl;
+// }
