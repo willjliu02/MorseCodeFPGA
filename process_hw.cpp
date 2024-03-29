@@ -8,7 +8,9 @@
 #include <ap_axi_sdata.h>
 #include <hls_stream.h>
 // #include <iostream>
-
+/* ------------------------------------------------------------------------ */
+/* -------------------------------- MODULE -------------------------------- */
+/* ------------------------------------------------------------------------ */
 typedef short bit;
 typedef short beat;
 typedef short letter;
@@ -37,7 +39,9 @@ letter CURRENT_LETTER = 0;
 int BEAT_ERROR_RANGE = 3; // describes the 2^-BEAT_ERROR_RANGE error
 int BEAT_DURATION = 1;
 
+/* ------------------------------------------------------------------------ */
 /* ----------------------------- LETTER STATE ----------------------------- */
+/* ------------------------------------------------------------------------ */
 void initLetters() {
     CURRENT_LETTER = 0;
 }
@@ -63,7 +67,9 @@ void finalize(char* next_letter) {
     getLetter(next_letter);
 }
 
+/* ------------------------------------------------------------------------ */
 /* ----------------------------- BEAT DECODER ----------------------------- */
+/* ------------------------------------------------------------------------ */
 void adjustFactors(beat expNumBits, beat recNumBits) {
     // goal: adjust the beat duration to better include the beats
 
@@ -101,9 +107,9 @@ beat removeNoise(beat numBits) {
     return -1;
 }
 
-
+/* ------------------------------------------------------------------------ */
 /* ------------------------------- PROCESS -------------------------------- */
-
+/* ------------------------------------------------------------------------ */
 Meaning parsePrevInputs() {
     // TODO: consider changing this from division to multiple or something else entirely
     // TODO: idea: multiplication in removeNoise (mulitply by beat values)
@@ -203,29 +209,3 @@ void processNextBit(hls::stream<ap_axis<32,2,5,6>>& inBit, hls::stream<ap_axis<3
         }
     } while (!tmp.last);    
 }
-// int main() {
-//     bit bytes[100] = {1, 0, 1, 1, 1, 0, 0, 0};
-//     char letters[100];
-
-//     for (int i = 0; i < 8; ++i) {
-//         bit bitVal = bytes[i];
-
-//         if (bitVal == PREV_BIT) {
-//             ++NUM_OF_BITS;
-//         } else {
-//             Meaning meaning = parsePrevInputs();
-            
-//             std::cout << meaning << std::endl;
-
-//             process(meaning, letters);
-
-//             PREV_BIT = bitVal;
-//             NUM_OF_BITS = 1;
-//         }
-//     }
-
-//     finalize(letters);
-
-
-//     std::cout << letters[0] << std::endl;
-// }
