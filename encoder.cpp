@@ -1,15 +1,45 @@
 #include <iostream>
-#include <cstring>
+#include <hls_stream.h>
+#include <ap_axi_sdata.h>
 
-using namespace std;
+using namespace hls;
 
-const char* MORSE_CODE_DICT[] = {
+typedef ap_axiu<8,1,1,1>AXI_STREAM;
+
+const char* encode_text(const char* text);
+
+void morse_encoder(stream<AXI_STREAM>& in_stream, stream<AXI_STREAM>& out_stream) {
+#pragma HLS INTERFACE axis register both port= out_stream
+#pragma HLS INTERFACE axis register both port= in_stream
+#pragma HLS INTERFACE ap_ctrl_none port=return
+
+    while (!in_stream.empty()) {
+        AXI_STREAM input = in_stream.read();
+        char data[2]; // Modify to accept an array of characters
+        data[0] = input.data; // Extracting data from the input stream
+        data[1] = '\0'; // Null-terminate the string
+
+        // Perform Morse encoding on the data
+        const char* encoded_data = encode_text(data);
+
+        // Output the encoded data in AXI-Stream format
+        AXI_STREAM output;
+        output.data = encoded_data;
+        output.keep = input.keep;
+        output.last = input.last;
+        out_stream.write(output);
+    }
+}
+
+
+
+const char* MORSE_CODE_DICT[37] = {
         ".-",   "-...", "-.-.", "-..",  ".","..-.", "--.",  "....", "..",   ".---", "-.-",  ".-..", "--",
         "-.",   "---",  ".--.", "--.-", ".-.",  "...",  "-",    "..-",  "...-", ".--",  "-..-", "-.--", "--..",
         ".----", "..---", "...--", "....-", ".....", "-....", "--...", "---..", "----.", "-----", "/"
 };
 
-const char LETTER_AS_AN_INDEX[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q',
+const char LETTER_AS_AN_INDEX[37] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q',
                                    'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '1', '2', '3', '4', '5', '6', '7', '8', '9',
                                    '0', ' '};
 
@@ -44,43 +74,54 @@ int findIndex(const char arr[], int size, const char target) {
 
 const char* encode_char(const char c) {
     static char encoded_bits[50];
-    int index = findIndex(LETTER_AS_AN_INDEX,37,c);
+    int index = findIndex(LETTER_AS_AN_INDEX, 37, c);
 
     if (index != -1) {
-        size_t morse_code_length = 0;
-        while (MORSE_CODE_DICT[index][morse_code_length] != '\0') {
-            ++morse_code_length;
-        }
+           size_t morse_code_length = 0;
+           while (MORSE_CODE_DICT[index][morse_code_length] != '\0') {
+               ++morse_code_length;
+           }
 
         size_t encoded_bits_index = 0;
-        for (size_t i = 0; i < morse_code_length && encoded_bits_index < sizeof(encoded_bits) - 1; ++i) {
-            const char* encoded_symbol = encode_symbol(MORSE_CODE_DICT[index]);
+        const char* encoded_symbol = encode_symbol(MORSE_CODE_DICT[index]);
+        const char* separator = encode_symbol_separator();
+
+        while (*encoded_symbol != '\0' && encoded_bits_index < sizeof(encoded_bits) - 1) {
+            encoded_bits[encoded_bits_index++] = *encoded_symbol++;
+        }
+
+        for (size_t i = 1; i < morse_code_length && encoded_bits_index < sizeof(encoded_bits) - 1; ++i) {
+            while (*separator != '\0' && encoded_bits_index < sizeof(encoded_bits) - 1) {
+                encoded_bits[encoded_bits_index++] = *separator++;
+            }
+            encoded_symbol = encode_symbol(MORSE_CODE_DICT[index]);
             while (*encoded_symbol != '\0' && encoded_bits_index < sizeof(encoded_bits) - 1) {
                 encoded_bits[encoded_bits_index++] = *encoded_symbol++;
-            }
-
-            if (i < morse_code_length - 1 && encoded_bits_index < sizeof(encoded_bits) - 1) {
-                const char* separator = encode_symbol_separator();
-                while (*separator != '\0' && encoded_bits_index < sizeof(encoded_bits) - 1) {
-                    encoded_bits[encoded_bits_index++] = *separator++;
-                }
             }
         }
         encoded_bits[encoded_bits_index] = '\0'; // Null-terminate the encoded string
     } else {
         // Handle case when character not found in Morse code dictionary
-        size_t msg_length = sizeof("Character not found in Morse code dictionary") - 1;
-        for (size_t i = 0; i < msg_length && i < sizeof(encoded_bits) - 1; ++i) {
-            encoded_bits[i] = "Character not found in Morse code dictionary"[i];
+        const char* error_msg = "Character not found in Morse code dictionary";
+        size_t i = 0;
+        size_t encoded_bits_index = 0;
+        while (error_msg[i] != '\0' && encoded_bits_index < sizeof(encoded_bits) - 1) {
+            encoded_bits[encoded_bits_index++] = error_msg[i++];
         }
-        encoded_bits[msg_length] = '\0'; // Null-terminate the encoded string
+        encoded_bits[encoded_bits_index] = '\0'; // Null-terminate the encoded string
     }
     return encoded_bits;
+}
+void initialize_array(char* array, int size) {
+    for (int i = 0; i < size; ++i) {
+        array[i] = 0;
+    }
 }
 
 const char* encode_text(const char* text) {
     static char encoded_text[200]; // Use a fixed size buffer
-    memset(encoded_text, 0, sizeof(encoded_text)); // Initialize with zeros
+
+    initialize_array(encoded_text, sizeof(encoded_text)); // Initialize with zeros
 
     int i = 0;
     int encoded_text_index = 0; // New index variable for updating encoded_text
@@ -108,4 +149,6 @@ const char* encode_text(const char* text) {
     }
     return encoded_text;
 }
+
+
 
