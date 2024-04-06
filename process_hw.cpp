@@ -7,14 +7,14 @@
 
 #include <ap_axi_sdata.h>
 #include <hls_stream.h>
-// #include <iostream>
+ #include <iostream>
 /* ------------------------------------------------------------------------ */
 /* -------------------------------- MODULE -------------------------------- */
 /* ------------------------------------------------------------------------ */
-typedef short bit;
+typedef ap_uint<1> bit;
 typedef short beat;
-typedef short letter;
-typedef char* retPtr;
+typedef ap_uint<5> letter;
+typedef ap_axis<32,1,1,1> AXI_VAL;
 
 enum Meaning{
     // Symbol
@@ -47,10 +47,10 @@ void initLetters() {
 }
 
 void shiftLetter(bit isDash) {
-    CURRENT_LETTER = CURRENT_LETTER * 2 + isDash;
+    CURRENT_LETTER = CURRENT_LETTER * 2 + isDash + 1;
 }
 
-void getLetter(char* next_letter) {
+char getLetter() {
     char ret_letter;
     if (CURRENT_LETTER > 0 && CURRENT_LETTER <= MAX_LETTER) {
         ret_letter = LETTERS[CURRENT_LETTER - 1];
@@ -58,13 +58,13 @@ void getLetter(char* next_letter) {
         ret_letter = *"";
     }
 
-    CURRENT_LETTER = 0;
+    initLetters();
 
-    next_letter = &ret_letter;
+    return ret_letter;
 }
 
-void finalize(char* next_letter) {
-    getLetter(next_letter);
+char finalize() {
+    return getLetter();
 }
 
 /* ------------------------------------------------------------------------ */
@@ -76,13 +76,16 @@ void adjustFactors(beat expNumBits, beat recNumBits) {
     // calculates the difference between the received and expected bits
     // divides that by 4, so that we get some shift in the right direction
     // then uses this number to adjust the beat duration
-    BEAT_DURATION += (expNumBits - recNumBits) >> 2;
+	short tmp = BEAT_DURATION + (expNumBits - recNumBits) >> 2;
+
+    BEAT_DURATION = tmp;
 }
 
 beat removeNoise(beat numBits) {
     // use bit shifting to the right to do the math
     // x >> 3 = 12.5% of x
     beat numBeats[3] = {1, 3, 7};
+#pragma HLS ARRAY_PARTITION dim=1 type=complete variable=numBeats
     
     for (int i = 0; i < 3; ++i) {
         beat center = numBeats[i] * BEAT_DURATION;
@@ -110,14 +113,16 @@ beat removeNoise(beat numBits) {
 /* ------------------------------------------------------------------------ */
 /* ------------------------------- PROCESS -------------------------------- */
 /* ------------------------------------------------------------------------ */
-Meaning parsePrevInputs() {
+Meaning parsePrevInputs(bit isLast) {
     // TODO: consider changing this from division to multiple or something else entirely
     // TODO: idea: multiplication in removeNoise (mulitply by beat values)
     beat beat_dur = removeNoise(NUM_OF_BITS);
 
     Meaning meaning;
 
-    if (PREV_BIT) {
+    if (isLast) {
+    	meaning = Meaning::NEXT_LETTER;
+    } else if (PREV_BIT) {
         switch (beat_dur)
         {
             case 1:
@@ -151,61 +156,55 @@ Meaning parsePrevInputs() {
     return meaning;
 }
 
-void process(Meaning meaning, char* ret_letter) {
-    char ret_let[3] = "  ";
-    char *tmp_letter;
-
-    switch(meaning){
-        case Meaning::DOT:
-            shiftLetter(0);
-            ret_let[0] = '\0';
-            break;
-        case Meaning::DASH:
-            shiftLetter(1);
-            ret_let[0] = '\0';
-            break;
-        case Meaning::NEXT_LETTER:
-            getLetter(tmp_letter);
-            ret_let[0] = *tmp_letter;
-            ret_let[1] = '\0';
-            break;
-        case Meaning::NEXT_WORD:
-            getLetter(tmp_letter);
-            ret_let[0] = *tmp_letter;
-            break;
-        default:
-            break;
-    }
-
-    ret_letter = ret_let;
-}
-
-void processNextBit(hls::stream<ap_axis<32,2,5,6>>& inBit, hls::stream<ap_axis<32,2,5,6>>& outLetter) {
+void processNextBit(hls::stream<AXI_VAL>& inBit, hls::stream<AXI_VAL>& outLetter) {
+#pragma HLS TOP name=processNextBit
 #pragma HLS INTERFACE axis port=inBit
 #pragma HLS INTERFACE axis port=outLetter
 #pragma HLS INTERFACE s_axilite port=return
 
-    retPtr tmpRet = nullptr;
-    ap_axis<32,2,5,6> tmp;
+    AXI_VAL tmp;
 
     do {
-        inBit.read(tmp);
+    	if (inBit.read_nb(tmp)) {
+			bit bitVal = (bit)tmp.data.to_int();
 
-        bit bitVal = tmp.data.to_int();
+			if (bitVal == PREV_BIT) {
+				++NUM_OF_BITS;
+			} else {
+				Meaning meaning = parsePrevInputs(tmp.last);
 
-        if (bitVal == PREV_BIT) {
-            ++NUM_OF_BITS;
-        } else {
-            Meaning meaning = parsePrevInputs();
+				char tmp_let[3] = "  ";
+				char *tmp_letter;
 
-            process(meaning, tmpRet);
+				switch(meaning){
+					case Meaning::DOT:
+						shiftLetter(0);
+						tmp_let[0] = '\0';
+						break;
+					case Meaning::DASH:
+						shiftLetter(1);
+						tmp_let[0] = '\0';
+						break;
+					case Meaning::NEXT_LETTER:
+						tmp_let[0] = getLetter();
+						tmp_let[1] = '\0';
+						break;
+					case Meaning::NEXT_WORD:
+						tmp_let[0] = getLetter();
+						break;
+					default:
+						tmp_let[0] = '\0';
+				}
 
-            PREV_BIT = bitVal;
-            NUM_OF_BITS = 1;
+				PREV_BIT = bitVal;
+				NUM_OF_BITS = 1;
 
-            tmp.data = tmpRet;
+				for (int i = 0; i < 2 && tmp_let[i] != '\0'; ++i) {
+					tmp.data = tmp_let[i];
 
-            outLetter.write(tmp);
+					outLetter.write(tmp);
+				}
+			}
         }
     } while (!tmp.last);    
 }
