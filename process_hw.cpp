@@ -14,6 +14,7 @@
 typedef ap_uint<1> bit;
 typedef short beat;
 typedef ap_uint<5> letter;
+// TODO: maybe consider making 2 different axi_val values to have a 1 bit input stream and a smaller than 32 output stream
 typedef ap_axis<32,1,1,1> AXI_VAL;
 
 enum Meaning{
@@ -33,8 +34,10 @@ enum Meaning{
 
 bit PREV_BIT = 0;
 int NUM_OF_BITS = 0;
-const char* LETTERS = "ETIANMSURWDKGOHVF L PJBXCYZQ";
+// const char* LETTERS = "ETIANMSURWDKGOHVF L PJBXCYZQ";
+// const letter LETTERS[MAX_LETTER] = {5, 20, 9, 1, 14, 13, 19, 21, 18, 23, 4, 11, 7, 15, 8, 22, 6, 31, 12, 31, 16, 10, 2, 24, 3, 25, 26, 17} 
 letter MAX_LETTER = 28;
+// 31 is a space
 letter CURRENT_LETTER = 0;
 int BEAT_ERROR_RANGE = 3; // describes the 2^-BEAT_ERROR_RANGE error
 int BEAT_DURATION = 1;
@@ -50,7 +53,7 @@ void shiftLetter(bit isDash) {
     CURRENT_LETTER = CURRENT_LETTER * 2 + isDash + 1;
 }
 
-char getLetter() {
+char getLetter(letter letters[MAX_LETTER]) {
     char ret_letter;
     if (CURRENT_LETTER > 0 && CURRENT_LETTER <= MAX_LETTER) {
         ret_letter = LETTERS[CURRENT_LETTER - 1];
@@ -146,7 +149,8 @@ Meaning parsePrevInputs(bit isLast) {
     return meaning;
 }
 
-void processNextBit(hls::stream<AXI_VAL>& inBit, hls::stream<AXI_VAL>& outLetter) {
+// TODO: when returned the value is now some value offset from chr('a') 
+void processNextBit(hls::stream<AXI_VAL>& inBit, letter letters[MAX_LETTER], hls::stream<AXI_VAL>& outLetter) {
 #pragma HLS TOP name=processNextBit
 #pragma HLS INTERFACE axis port=inBit
 #pragma HLS INTERFACE axis port=outLetter
@@ -154,9 +158,11 @@ void processNextBit(hls::stream<AXI_VAL>& inBit, hls::stream<AXI_VAL>& outLetter
 
     AXI_VAL tmp;
 
+    // TODO: if LETTERS returns some value (0-25) wihtin the alphabet, then remove all CHARS
 
     while (true) {
 #pragma HLS PIPELINE II=3
+// TODO: consider adding some "trailing zeros" to be interpreted as the "end" and to finalize
     	if (inBit.read_nb(tmp)) {
 			bit bitVal = (bit)tmp.data.to_int();
 
@@ -179,11 +185,11 @@ void processNextBit(hls::stream<AXI_VAL>& inBit, hls::stream<AXI_VAL>& outLetter
 						tmp_let[0] = '\0';
 						break;
 					case Meaning::NEXT_LETTER:
-						tmp_let[0] = getLetter();
+						tmp_let[0] = getLetter(letters);
 						tmp_let[1] = '\0';
 						break;
 					case Meaning::NEXT_WORD:
-						tmp_let[0] = getLetter();
+						tmp_let[0] = getLetter(letters);
 						break;
 					default:
 						tmp_let[0] = '\0';
