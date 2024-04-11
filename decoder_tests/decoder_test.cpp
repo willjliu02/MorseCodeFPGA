@@ -4,27 +4,27 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <cctype>
 
 #include <ap_axi_sdata.h>
 #include <hls_stream.h>
 
-typedef char* retPtr;
-typedef ap_axis<32,2,5,6> AXIVal;
-typedef hls::stream<AXIVal> AXIStream;
-typedef short bit;
-typedef short beat;
-typedef short letter;
-
 using namespace std;
 
 #define ZERO short('0')
+#define TO_LOW (short('a') - short('A'))
+typedef ap_uint<1> bit;
+typedef short beat;
+typedef ap_uint<5> letter;
+typedef ap_axis<32,1,1,1> AXI_VAL;
 
-void processNextBit(AXIStream& inBit, AXIStream& outLetter);
+
+void processNextBit(hls::stream<AXI_VAL>& inBit, hls::stream<AXI_VAL>& outLetter);
 
 // make a process test method that runs all the info in
 int testProcess(char* inputName, char* goldenName){
-    AXIStream inBit, outLetter;
-    AXIVal in_tmp, out_tmp;
+	hls::stream<AXI_VAL> inBit, outLetter;
+	AXI_VAL in_tmp, out_tmp;
     char inputLine[100], outputLine[100], goldenLine[100];
 
     ifstream inputFile, outputFile, goldenFile;
@@ -38,7 +38,12 @@ int testProcess(char* inputName, char* goldenName){
                 break;
             } 
 
-            short inBitVal = short(inputLine[i]) - ZERO;
+            bit inBitVal;
+            if (short(inputLine[i]) - ZERO == 0) {
+            	inBitVal = 0;
+            } else {
+            	inBitVal = 1;
+            }
 
             in_tmp.data = inBitVal;
             in_tmp.keep = 1;
@@ -53,23 +58,29 @@ int testProcess(char* inputName, char* goldenName){
         }
     } 
 
+    in_tmp.data = (bit)1;
+    in_tmp.last = 1;
+    inBit.write(in_tmp);
+
     processNextBit(inBit, outLetter);
 
     bool hasErrors = false;
-    while (goldenFile >> goldenLine) {
-        outLetter.read(out_tmp);
 
-        for(short i = 0; i < 100; i++) {
-            if (goldenLine[i] == '\0') {
-                break;
-            }
+    while(!(goldenFile >> goldenLine)) {
+    	short i = 0;
+    	while(i < 100 && goldenLine[i] != '\0') {
+    		if (outLetter.read_nb(out_tmp)) {
+    			char outLetter = (char)(out_tmp.data.to_int() + TO_LOW);
 
-            char outLetter = out_tmp.data.to_char();
-            if (outLetter != goldenLine[i]) {
-                cout << "ERROR: results mismatch. Expected: " << goldenLine[i] << " Received: " << outLetter << endl;
-                hasErrors = true;
-            }
-        }
+				cout << out_tmp.data.to_int() + TO_LOW << endl;
+				if (outLetter != goldenLine[i]) {
+					cout << "ERROR: results mismatch. Expected: " << goldenLine[i] << " Received: " << outLetter << endl;
+					hasErrors = true;
+				}
+
+				i++;
+    		}
+    	}
     }
 
     if (!hasErrors) {
@@ -80,10 +91,37 @@ int testProcess(char* inputName, char* goldenName){
     return 1;
 }
 
+void testHeader(short testNum) {
+	cout << "------------------------------------------------------------------------------------------" << endl;
+	cout << "----------------------------------------- Test " << testNum << " -----------------------------------------" << endl;
+	cout << "------------------------------------------------------------------------------------------" << endl;
+}
+
+int test1(){
+	testHeader(1);
+	return testProcess("test1.txt", "golden_out1.txt");
+}
+
+int test2() {
+	testHeader(2);
+	return testProcess("test2.txt", "golden_out2_3.txt");
+}
+
+int test3() {
+	testHeader(3);
+	return testProcess("test3.txt", "golden_out2_3.txt");
+}
+
+int test4() {
+	testHeader(4);
+	return testProcess("test4.txt", "golden_out4.txt");
+}
+
 int main() {
-    char inputName[100] = "test1.txt";
-    char goldenName[100] = "golden_out1.txt";
-    testProcess(inputName, goldenName);
+	test1();
+	test2();
+	test3();
+	test4();
 
     return 0;
 }
