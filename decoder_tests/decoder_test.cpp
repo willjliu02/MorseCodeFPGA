@@ -18,8 +18,11 @@ typedef short beat;
 typedef ap_uint<5> letter;
 typedef ap_axis<32,1,1,1> AXI_VAL;
 
+int MAX_LETTER = 28;
 
-void processNextBit(hls::stream<AXI_VAL>& inBit, hls::stream<AXI_VAL>& outLetter);
+const letter LETTERS[MAX_LETTER] = {4, 19, 8, 0, 13, 12, 18, 20, 17, 22, 3, 10, 6, 14, 7, 21, 5, 31, 11, 31, 15, 9, 1, 23, 2, 24, 25, 16};
+
+void processNextBit(hls::stream<AXI_VAL>& inBit, letter letters[MAX_LETTER], hls::stream<AXI_VAL>& outLetter);
 
 // make a process test method that runs all the info in
 int testProcess(char* inputName, char* goldenName){
@@ -62,7 +65,7 @@ int testProcess(char* inputName, char* goldenName){
     in_tmp.last = 1;
     inBit.write(in_tmp);
 
-    processNextBit(inBit, outLetter);
+    processNextBit(inBit, LETTERS, outLetter);
 
     bool hasErrors = false;
 
