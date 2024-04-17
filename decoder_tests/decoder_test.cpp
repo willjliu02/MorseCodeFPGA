@@ -16,18 +16,21 @@ using namespace std;
 typedef ap_uint<1> bit;
 typedef short beat;
 typedef ap_uint<5> letter;
-typedef ap_axis<32,1,1,1> AXI_VAL;
+typedef ap_axis<32,1,1,1> IN_BIT;
+typedef ap_axis<32,1,1,1> OUT_LETTER;
 
-int MAX_LETTER = 28;
+//letter MAX_LETTER = 28;
 
-const letter LETTERS[MAX_LETTER] = {4, 19, 8, 0, 13, 12, 18, 20, 17, 22, 3, 10, 6, 14, 7, 21, 5, 31, 11, 31, 15, 9, 1, 23, 2, 24, 25, 16};
+letter LETTERS[] = {4, 19, 8, 0, 13, 12, 18, 20, 17, 22, 3, 10, 6, 14, 7, 21, 5, 31, 11, 31, 15, 9, 1, 23, 2, 24, 25, 16};
 
-void processNextBit(hls::stream<AXI_VAL>& inBit, letter letters[MAX_LETTER], hls::stream<AXI_VAL>& outLetter);
+void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, hls::stream<OUT_LETTER>& outLetter);
 
 // make a process test method that runs all the info in
 int testProcess(char* inputName, char* goldenName){
-	hls::stream<AXI_VAL> inBit, outLetter;
-	AXI_VAL in_tmp, out_tmp;
+	hls::stream<IN_BIT> inBit;
+	hls::stream<OUT_LETTER> outLetter;
+	IN_BIT in_tmp;
+	OUT_LETTER out_tmp;
     char inputLine[100], outputLine[100], goldenLine[100];
 
     ifstream inputFile, outputFile, goldenFile;
