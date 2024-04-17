@@ -15,7 +15,8 @@ typedef ap_uint<1> bit;
 typedef short beat;
 typedef ap_uint<5> letter;
 // TODO: maybe consider making 2 different axi_val values to have a 1 bit input stream and a smaller than 32 output stream
-typedef ap_axis<32,1,1,1> AXI_VAL;
+typedef ap_axis<32,1,1,1> IN_BIT;
+typedef ap_axis<32,1,1,1> OUT_LETTER;
 
 enum Meaning{
     // Symbol
@@ -26,6 +27,7 @@ enum Meaning{
     NEXT_SYMBOL,
     NEXT_LETTER,
     NEXT_WORD,
+	FINALIZE,
 
     // Unknown
     UNKNOWN = -1,
@@ -53,10 +55,10 @@ void shiftLetter(bit isDash) {
     CURRENT_LETTER = CURRENT_LETTER * 2 + isDash + 1;
 }
 
-char getLetter(letter letters[MAX_LETTER]) {
+letter getLetter(letter *letters) {
     char ret_letter;
     if (CURRENT_LETTER > 0 && CURRENT_LETTER <= MAX_LETTER) {
-        ret_letter = LETTERS[CURRENT_LETTER - 1];
+        ret_letter = letters[CURRENT_LETTER - 1];
     } else {
         ret_letter = *"";
     }
@@ -66,8 +68,8 @@ char getLetter(letter letters[MAX_LETTER]) {
     return ret_letter;
 }
 
-char finalize() {
-    return getLetter();
+char finalize(letter *letters) {
+    return getLetter(letters);
 }
 
 /* ------------------------------------------------------------------------ */
@@ -94,8 +96,6 @@ beat removeNoise() {
 #pragma HLS UNROLL
         beat center = numBeats[i] * BEAT_DURATION;
         beat bitError = center >> BEAT_ERROR_RANGE;
-
-        beat lowRange = center - bitError;
         beat highRange;
 
         if (i < 2) {
@@ -104,10 +104,12 @@ beat removeNoise() {
             highRange = center + bitError;
         }
         
-
-        if (NUM_OF_BITS < highRange && NUM_OF_BITS >= lowRange) {
-            adjustFactors(center, NUM_OF_BITS);
-            return numBeats[i];
+        beat lowRange = center - bitError;
+        if (NUM_OF_BITS < highRange) {
+        	if (NUM_OF_BITS >= lowRange) {
+        		adjustFactors(center, NUM_OF_BITS);
+				return numBeats[i];
+        	}
         }
     }
 
@@ -125,7 +127,7 @@ Meaning parsePrevInputs(bit isLast) {
     Meaning meaning;
 
     if (isLast) {
-    	meaning = Meaning::NEXT_LETTER;
+    	meaning = Meaning::FINALIZE;
     } else if (PREV_BIT) {
     	if (beat_dur == 1) {
     		meaning = Meaning::DOT;
@@ -150,67 +152,87 @@ Meaning parsePrevInputs(bit isLast) {
 }
 
 // TODO: when returned the value is now some value offset from chr('a') 
-void processNextBit(hls::stream<AXI_VAL>& inBit, letter letters[MAX_LETTER], hls::stream<AXI_VAL>& outLetter) {
+void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, hls::stream<OUT_LETTER>& outLetter) {
 #pragma HLS TOP name=processNextBit
 #pragma HLS INTERFACE axis port=inBit
 #pragma HLS INTERFACE axis port=outLetter
-#pragma HLS INTERFACE s_axilite port=return
+#pragma HLS INTERFACE m_axi depth=28 port=letters
+#pragma HLS INTERFACE ap_ctrl_none port=return
 
-    AXI_VAL tmp;
+	IN_BIT input;
+	OUT_LETTER output;
 
     // TODO: if LETTERS returns some value (0-25) wihtin the alphabet, then remove all CHARS
 
     while (true) {
 #pragma HLS PIPELINE II=3
 // TODO: consider adding some "trailing zeros" to be interpreted as the "end" and to finalize
-    	if (inBit.read_nb(tmp)) {
-			bit bitVal = (bit)tmp.data.to_int();
+    	inBit.read(input);
+//    	if (inBit.read_nb(input)) {
+		bit bitVal = (bit)input.data;
 
-			if (bitVal == PREV_BIT) {
-				++NUM_OF_BITS;
-			} else {
-				Meaning meaning = parsePrevInputs(tmp.last);
+//		output.data = bitVal;
+//		output.keep = input.keep;
+//		output.strb = input.strb;
+//		output.last = input.last;
+//		output.dest = input.dest;
+//		output.id = input.id;
+//		output.user = input.user;
+//
+//		outLetter.write(output);
+		if (!input.last && bitVal == PREV_BIT) {
+			++NUM_OF_BITS;
+		} else {
+			Meaning meaning = parsePrevInputs(input.last);
 
-				char tmp_let[3] = "  ";
-#pragma HLS ARRAY_PARTITION dim=1 type=complete variable=tmp_let
-				char *tmp_letter;
+			letter tmp_letter[2];
+#pragma HLS ARRAY_PARTITION dim=1 type=complete variable=tmp_letter
 
-				switch(meaning){
-					case Meaning::DOT:
-						shiftLetter(0);
-						tmp_let[0] = '\0';
-						break;
-					case Meaning::DASH:
-						shiftLetter(1);
-						tmp_let[0] = '\0';
-						break;
-					case Meaning::NEXT_LETTER:
-						tmp_let[0] = getLetter(letters);
-						tmp_let[1] = '\0';
-						break;
-					case Meaning::NEXT_WORD:
-						tmp_let[0] = getLetter(letters);
-						break;
-					default:
-						tmp_let[0] = '\0';
-				}
-
-				PREV_BIT = bitVal;
-				NUM_OF_BITS = 1;
-
-				for (int i = 0; i < 2 && tmp_let[i] != '\0'; ++i) {
-					tmp.data = tmp_let[i];
-					outLetter.write(tmp);
-				}
+			switch(meaning){
+				case Meaning::DOT:
+					shiftLetter(0);
+					tmp_letter[0] = 31;
+					break;
+				case Meaning::DASH:
+					shiftLetter(1);
+					tmp_letter[0] = 31;
+					break;
+				case Meaning::NEXT_LETTER:
+					tmp_letter[0] = getLetter(letters);
+					tmp_letter[1] = 31;
+					break;
+				case Meaning::NEXT_WORD:
+					tmp_letter[0] = getLetter(letters);
+					break;
+				case Meaning::FINALIZE:
+					shiftLetter(bitVal);
+					tmp_letter[0] = getLetter(letters);
+					break;
+				default:
+					tmp_letter[0] = 31;
+					break;
 			}
-        }
 
-    	if (tmp.last) {
+			PREV_BIT = bitVal;
+			NUM_OF_BITS = 1;
+
+			output.keep = input.keep;
+			output.strb = input.strb;
+			output.dest = input.dest;
+			output.id = input.id;
+			output.user = input.user;
+			output.last = 0;
+
+			for (int i = 0; i < 2 && tmp_letter[i] != 31; ++i) {
+				output.data = tmp_letter[i];
+				outLetter.write(output);
+			}
+//		}
+		}
+    	if (input.last) {
     		break;
     	}
     }
-    tmp.last = 1;
-    outLetter.write(tmp);
-
-
+    output.last = 1;
+	outLetter.write(output);
 }
