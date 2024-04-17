@@ -55,7 +55,7 @@ void shiftLetter(bit isDash) {
     CURRENT_LETTER = CURRENT_LETTER * 2 + isDash + 1;
 }
 
-char getLetter(letter *letters) {
+letter getLetter(letter *letters) {
     char ret_letter;
     if (CURRENT_LETTER > 0 && CURRENT_LETTER <= MAX_LETTER) {
         ret_letter = letters[CURRENT_LETTER - 1];
@@ -180,26 +180,26 @@ void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, hls::stream<OUT
 //		output.user = input.user;
 //
 //		outLetter.write(output);
-		if (input.last == 0 && bitVal == PREV_BIT) {
+		if (!input.last && bitVal == PREV_BIT) {
 			++NUM_OF_BITS;
 		} else {
 			Meaning meaning = parsePrevInputs(input.last);
 
-			char tmp_letter[3] = "  ";
+			letter tmp_letter[2];
 #pragma HLS ARRAY_PARTITION dim=1 type=complete variable=tmp_letter
 
 			switch(meaning){
 				case Meaning::DOT:
 					shiftLetter(0);
-					tmp_letter[0] = '\0';
+					tmp_letter[0] = 31;
 					break;
 				case Meaning::DASH:
 					shiftLetter(1);
-					tmp_letter[0] = '\0';
+					tmp_letter[0] = 31;
 					break;
 				case Meaning::NEXT_LETTER:
 					tmp_letter[0] = getLetter(letters);
-					tmp_letter[1] = '\0';
+					tmp_letter[1] = 31;
 					break;
 				case Meaning::NEXT_WORD:
 					tmp_letter[0] = getLetter(letters);
@@ -209,7 +209,8 @@ void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, hls::stream<OUT
 					tmp_letter[0] = getLetter(letters);
 					break;
 				default:
-					tmp_letter[0] = '\0';
+					tmp_letter[0] = 31;
+					break;
 			}
 
 			PREV_BIT = bitVal;
@@ -221,7 +222,8 @@ void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, hls::stream<OUT
 			output.id = input.id;
 			output.user = input.user;
 			output.last = 0;
-			for (int i = 0; i < 2 && tmp_letter[i] != '\0'; ++i) {
+
+			for (int i = 0; i < 2 && tmp_letter[i] != 31; ++i) {
 				output.data = tmp_letter[i];
 				outLetter.write(output);
 			}

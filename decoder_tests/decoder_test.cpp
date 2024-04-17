@@ -21,7 +21,7 @@ typedef ap_axis<32,1,1,1> OUT_LETTER;
 
 //letter MAX_LETTER = 28;
 
-letter LETTERS[] = {4, 19, 8, 0, 13, 12, 18, 20, 17, 22, 3, 10, 6, 14, 7, 21, 5, 31, 11, 31, 15, 9, 1, 23, 2, 24, 25, 16};
+letter LETTERS[] = {5, 20, 9, 1, 14, 13, 19, 21, 18, 23, 4, 11, 7, 15, 8, 22, 6, 32, 12, 32, 16, 10, 2, 24, 3, 25, 26, 17};
 
 void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, hls::stream<OUT_LETTER>& outLetter);
 
