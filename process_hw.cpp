@@ -56,7 +56,7 @@ void shiftLetter(bit isDash) {
 }
 
 letter getLetter(letter *letters) {
-    char ret_letter;
+	letter ret_letter;
     if (CURRENT_LETTER > 0 && CURRENT_LETTER <= MAX_LETTER) {
         ret_letter = letters[CURRENT_LETTER - 1];
     } else {
@@ -68,7 +68,7 @@ letter getLetter(letter *letters) {
     return ret_letter;
 }
 
-char finalize(letter *letters) {
+letter finalize(letter *letters) {
     return getLetter(letters);
 }
 
@@ -119,16 +119,14 @@ beat removeNoise() {
 /* ------------------------------------------------------------------------ */
 /* ------------------------------- PROCESS -------------------------------- */
 /* ------------------------------------------------------------------------ */
-Meaning parsePrevInputs(bit isLast) {
+Meaning parsePrevInputs() {
     // TODO: consider changing this from division to multiple or something else entirely
     // TODO: idea: multiplication in removeNoise (multiply by beat values)
     beat beat_dur = removeNoise();
 
     Meaning meaning;
 
-    if (isLast) {
-    	meaning = Meaning::FINALIZE;
-    } else if (PREV_BIT) {
+    if (PREV_BIT) {
     	if (beat_dur == 1) {
     		meaning = Meaning::DOT;
     	} else if (beat_dur == 3){
@@ -164,6 +162,7 @@ void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, hls::stream<OUT
 
     // TODO: if LETTERS returns some value (0-25) wihtin the alphabet, then remove all CHARS
 
+	process_loop:
     while (true) {
 #pragma HLS PIPELINE II=3
 // TODO: consider adding some "trailing zeros" to be interpreted as the "end" and to finalize
@@ -171,68 +170,59 @@ void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, hls::stream<OUT
 //    	if (inBit.read_nb(input)) {
 		bit bitVal = (bit)input.data;
 
+		output.keep = input.keep;
+		output.strb = input.strb;
+		output.dest = input.dest;
+		output.id = input.id;
+		output.user = input.user;
+		output.last = 0;
+
 //		output.data = bitVal;
-//		output.keep = input.keep;
-//		output.strb = input.strb;
-//		output.last = input.last;
-//		output.dest = input.dest;
-//		output.id = input.id;
-//		output.user = input.user;
 //
 //		outLetter.write(output);
+
 		if (!input.last && bitVal == PREV_BIT) {
 			++NUM_OF_BITS;
 		} else {
-			Meaning meaning = parsePrevInputs(input.last);
+			Meaning meaning = parsePrevInputs();
 
-			letter tmp_letter[2];
+			letter tmp_letter[2] = {31, 31};
 #pragma HLS ARRAY_PARTITION dim=1 type=complete variable=tmp_letter
 
 			switch(meaning){
 				case Meaning::DOT:
 					shiftLetter(0);
-					tmp_letter[0] = 31;
 					break;
 				case Meaning::DASH:
 					shiftLetter(1);
-					tmp_letter[0] = 31;
 					break;
 				case Meaning::NEXT_LETTER:
 					tmp_letter[0] = getLetter(letters);
-					tmp_letter[1] = 31;
 					break;
 				case Meaning::NEXT_WORD:
 					tmp_letter[0] = getLetter(letters);
-					break;
-				case Meaning::FINALIZE:
-					shiftLetter(bitVal);
-					tmp_letter[0] = getLetter(letters);
+					tmp_letter[1] = 0;
 					break;
 				default:
-					tmp_letter[0] = 31;
 					break;
+			}
+
+			if (input.last) {
+				output.data = finalize(letters);
+				break;
 			}
 
 			PREV_BIT = bitVal;
 			NUM_OF_BITS = 1;
 
-			output.keep = input.keep;
-			output.strb = input.strb;
-			output.dest = input.dest;
-			output.id = input.id;
-			output.user = input.user;
-			output.last = 0;
-
-			for (int i = 0; i < 2 && tmp_letter[i] != 31; ++i) {
+			for (short i = 0; i < 2 && tmp_letter[i] != 31; ++i) {
 				output.data = tmp_letter[i];
 				outLetter.write(output);
 			}
 //		}
 		}
-    	if (input.last) {
-    		break;
-    	}
     }
+
     output.last = 1;
 	outLetter.write(output);
 }

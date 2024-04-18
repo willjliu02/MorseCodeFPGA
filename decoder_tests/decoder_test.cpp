@@ -76,7 +76,14 @@ int testProcess(char* inputName, char* goldenName){
     	short i = 0;
     	while(i < 100 && goldenLine[i] != '\0') {
     		if (outLetter.read_nb(out_tmp)) {
-    			char outLetter = (char)(out_tmp.data.to_int() + TO_LOW);
+    			int data = out_tmp.data.to_int();
+
+				char outLetter;
+				if (data == 0) {
+					outLetter = ' ';
+				} else {
+					outLetter = (char)(data + TO_LOW - 1);
+				}
 
 				cout << out_tmp.data.to_int() + TO_LOW << endl;
 				if (outLetter != goldenLine[i]) {
