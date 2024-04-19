@@ -11,9 +11,12 @@
 /* ------------------------------------------------------------------------ */
 /* -------------------------------- MODULE -------------------------------- */
 /* ------------------------------------------------------------------------ */
-typedef ap_uint<1> bit;
-typedef short beat;
-typedef ap_uint<5> letter;
+// typedef ap_uint<1> bit;
+// typedef ap_uint<5> letter;
+// typedef short beat;
+typedef int bit;
+typedef int letter;
+typedef int beat;
 // TODO: maybe consider making 2 different axi_val values to have a 1 bit input stream and a smaller than 32 output stream
 typedef ap_axis<32,1,1,1> IN_BIT;
 typedef ap_axis<32,1,1,1> OUT_LETTER;
@@ -160,13 +163,11 @@ void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, hls::stream<OUT
 
     // TODO: if LETTERS returns some value (0-25) wihtin the alphabet, then remove all CHARS
 
-	letter current_letter = 0;
+	// letter current_letter = 0;
 
     while (true) {
 #pragma HLS PIPELINE II=3
-// TODO: consider adding some "trailing zeros" to be interpreted as the "end" and to finalize
     	inBit.read(input);
-//    	if (inBit.read_nb(input)) {
 		bit bitVal = (bit)input.data;
 
 		output.keep = input.keep;
@@ -175,10 +176,6 @@ void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, hls::stream<OUT
 		output.id = input.id;
 		output.user = input.user;
 		output.last = 0;
-
-//		output.data = bitVal;
-//
-//		outLetter.write(output);
 
 		if (!input.last && bitVal == PREV_BIT) {
 			++NUM_OF_BITS;
@@ -189,47 +186,35 @@ void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, hls::stream<OUT
 
 			Meaning meaning = parsePrevInputs();
 
-//			letter tmp_letter[2] = {31, 31};
-//#pragma HLS ARRAY_PARTITION dim=1 type=complete variable=tmp_letter
-
 			switch(meaning){
 				case Meaning::DOT:
-					current_letter = current_letter * 2 + 1;
-//					shiftLetter(0);
+					shiftLetter(0);
 					break;
 				case Meaning::DASH:
-					current_letter = current_letter * 2 + 2;
-//					shiftLetter(1);
+					shiftLetter(1);
 					break;
 				case Meaning::NEXT_LETTER:
-//					if (current_letter > 0 && current_letter <= 28) {
-//						output.data = letters[current_letter - 1];
-//						outLetter.write(output);
-//					}
-					current_letter = 0;
+					output.data = get_letter(letters);
+					outLetter.write(output);
 					break;
 				case Meaning::NEXT_WORD:
-//					if (current_letter > 0 && current_letter <= 28) {
-//						output.data = letters[current_letter - 1];
-//						outLetter.write(output);
-//					}
-					current_letter = 0;
+					output.data = get_letter(letters);
+					outLetter.write(output);
 
-//					output.data = 0;
-//					outLetter.write(output);
+					output.data = 0;
+					outLetter.write(output);
 					break;
 				default:
 					break;
 			}
 
 			if (input.last) {
-				output.data = letters[current_letter - 1];
+				output.data = finalize(letters)
 				break;
 			}
 
 			PREV_BIT = bitVal;
 			NUM_OF_BITS = 1;
-//		}
 		}
 
 		if (input.last) {
