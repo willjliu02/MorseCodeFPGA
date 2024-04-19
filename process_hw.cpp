@@ -21,23 +21,23 @@ typedef int beat;
 typedef ap_axis<32,1,1,1> IN_BIT;
 typedef ap_axis<32,1,1,1> OUT_LETTER;
 
-enum Meaning{
-    // Symbol
-    DOT = 0,
-    DASH = 1,
+// enum Meaning{
+//     // Symbol
+//     DOT = 0,
+//     DASH = 1,
 
-    // Pauses
-    NEXT_SYMBOL,
-    NEXT_LETTER,
-    NEXT_WORD,
-	FINALIZE,
+//     // Pauses
+//     NEXT_SYMBOL,
+//     NEXT_LETTER,
+//     NEXT_WORD,
+// 	FINALIZE,
 
-    // Unknown
-    UNKNOWN = -1,
+//     // Unknown
+//     UNKNOWN = -1,
 
-};
+// };
 
-static bit PREV_BIT = 0;
+// static bit PREV_BIT = 0;
 static int NUM_OF_BITS = 0;
 // const char* LETTERS = "ETIANMSURWDKGOHVF L PJBXCYZQ";
 // const letter LETTERS[MAX_LETTER] = {5, 20, 9, 1, 14, 13, 19, 21, 18, 23, 4, 11, 7, 15, 8, 22, 6, 31, 12, 31, 16, 10, 2, 24, 3, 25, 26, 17} 
@@ -120,35 +120,35 @@ beat removeNoise() {
 /* ------------------------------------------------------------------------ */
 /* ------------------------------- PROCESS -------------------------------- */
 /* ------------------------------------------------------------------------ */
-Meaning parsePrevInputs() {
-    // TODO: consider changing this from division to multiple or something else entirely
-    // TODO: idea: multiplication in removeNoise (multiply by beat values)
-    beat beat_dur = removeNoise();
+// Meaning parsePrevInputs() {
+//     // TODO: consider changing this from division to multiple or something else entirely
+//     // TODO: idea: multiplication in removeNoise (multiply by beat values)
+//     beat beat_dur = removeNoise();
 
-    Meaning meaning;
+//     Meaning meaning;
 
-    if (PREV_BIT == 1) {
-    	if (beat_dur == 1) {
-    		meaning = Meaning::DOT;
-    	} else if (beat_dur == 3){
-    		meaning = Meaning::DASH;
-    	} else {
-    		meaning = Meaning::UNKNOWN;
-    	}
-    } else {
-    	if (beat_dur == 1) {
-			meaning = Meaning::NEXT_SYMBOL;
-		} else if (beat_dur == 3){
-			meaning = Meaning::NEXT_LETTER;
-		} else if (beat_dur == 7) {
-			meaning = Meaning::NEXT_WORD;
-		} else {
-			meaning = Meaning::UNKNOWN;
-		}
-    }
+//     if (PREV_BIT == 1) {
+//     	if (beat_dur == 1) {
+//     		meaning = Meaning::DOT;
+//     	} else if (beat_dur == 3){
+//     		meaning = Meaning::DASH;
+//     	} else {
+//     		meaning = Meaning::UNKNOWN;
+//     	}
+//     } else {
+//     	if (beat_dur == 1) {
+// 			meaning = Meaning::NEXT_SYMBOL;
+// 		} else if (beat_dur == 3){
+// 			meaning = Meaning::NEXT_LETTER;
+// 		} else if (beat_dur == 7) {
+// 			meaning = Meaning::NEXT_WORD;
+// 		} else {
+// 			meaning = Meaning::UNKNOWN;
+// 		}
+//     }
 
-    return meaning;
-}
+//     return meaning;
+// }
 
 // TODO: when returned the value is now some value offset from chr('a') 
 void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, hls::stream<OUT_LETTER>& outLetter) {
@@ -163,7 +163,9 @@ void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, hls::stream<OUT
 
     // TODO: if LETTERS returns some value (0-25) wihtin the alphabet, then remove all CHARS
 
-	// letter current_letter = 0;
+	// letter currentLetter = 0;
+
+	bit prevBit = 0;
 
     while (true) {
 #pragma HLS PIPELINE II=3
@@ -177,43 +179,47 @@ void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, hls::stream<OUT
 		output.user = input.user;
 		output.last = 0;
 
-		if (!input.last && bitVal == PREV_BIT) {
+		if (!input.last && bitVal == prevBit) {
 			++NUM_OF_BITS;
 		} else {
 			if (input.last) {
 				++NUM_OF_BITS;
 			}
 
-			Meaning meaning = parsePrevInputs();
-
-			switch(meaning){
-				case Meaning::DOT:
+			// Meaning meaning = parsePrevInputs();
+			beat beat_dur = removeNoise();
+			
+			if (prevBit == 1) {
+				if (beat_dur == 1) {
+					// dot
 					shiftLetter(0);
-					break;
-				case Meaning::DASH:
+				} else if (beat_dur == 3){
+					// dash
 					shiftLetter(1);
-					break;
-				case Meaning::NEXT_LETTER:
+				}
+			} else {
+				if (beat_dur == 3){
+					// next letter
 					output.data = get_letter(letters);
 					outLetter.write(output);
-					break;
-				case Meaning::NEXT_WORD:
+				} else if (beat_dur == 7) {
+					// next word
 					output.data = get_letter(letters);
 					outLetter.write(output);
 
 					output.data = 0;
 					outLetter.write(output);
-					break;
-				default:
-					break;
+				}
 			}
+
+			// do nothing if unknown 
 
 			if (input.last) {
 				output.data = finalize(letters)
 				break;
 			}
 
-			PREV_BIT = bitVal;
+			prevBit = bitVal;
 			NUM_OF_BITS = 1;
 		}
 
