@@ -21,23 +21,6 @@ typedef int beat;
 typedef ap_axis<32,1,1,1> IN_BIT;
 typedef ap_axis<32,1,1,1> OUT_LETTER;
 
-// enum Meaning{
-//     // Symbol
-//     DOT = 0,
-//     DASH = 1,
-
-//     // Pauses
-//     NEXT_SYMBOL,
-//     NEXT_LETTER,
-//     NEXT_WORD,
-// 	FINALIZE,
-
-//     // Unknown
-//     UNKNOWN = -1,
-
-// };
-
-// static bit PREV_BIT = 0;
 static int NUM_OF_BITS = 0;
 // const char* LETTERS = "ETIANMSURWDKGOHVF L PJBXCYZQ";
 // const letter LETTERS[MAX_LETTER] = {5, 20, 9, 1, 14, 13, 19, 21, 18, 23, 4, 11, 7, 15, 8, 22, 6, 31, 12, 31, 16, 10, 2, 24, 3, 25, 26, 17} 
@@ -76,18 +59,7 @@ letter finalize(letter *letters) {
 /* ------------------------------------------------------------------------ */
 /* ----------------------------- BEAT DECODER ----------------------------- */
 /* ------------------------------------------------------------------------ */
-//void adjustFactors(beat expNumBits, beat recNumBits) {
-//    // goal: adjust the beat duration to better include the beats
-//
-//    // calculates the difference between the received and expected bits
-//    // divides that by 4, so that we get some shift in the right direction
-//    // then uses this number to adjust the beat duration
-//	short tmp = (BEAT_DURATION + (expNumBits - recNumBits)) >> 2;
-//
-//    BEAT_DURATION = tmp;
-//}
-
-beat removeNoise() {
+beat removeNoise(beat beat_duration) {
     // use bit shifting to the right to do the math
     // x >> 3 = 12.5% of x
     beat numBeats[3] = {1, 3, 7};
@@ -95,7 +67,7 @@ beat removeNoise() {
     
     for (int i = 0; i < 3; ++i) {
 #pragma HLS UNROLL
-        beat center = numBeats[i] * BEAT_DURATION;
+        beat center = numBeats[i] * beat_duration;
         beat bitError = center >> BEAT_ERROR_RANGE;
         beat highRange;
 
@@ -107,8 +79,7 @@ beat removeNoise() {
         
         beat lowRange = center - bitError;
         if (NUM_OF_BITS < highRange) {
-        	if (NUM_OF_BITS >= lowRange) {
-//        		adjustFactors(center, NUM_OF_BITS);
+        	if (NUM_OF_BITS >= lowRange) {\
 				return numBeats[i];
         	}
         }
@@ -117,40 +88,7 @@ beat removeNoise() {
     return -1;
 }
 
-/* ------------------------------------------------------------------------ */
-/* ------------------------------- PROCESS -------------------------------- */
-/* ------------------------------------------------------------------------ */
-// Meaning parsePrevInputs() {
-//     // TODO: consider changing this from division to multiple or something else entirely
-//     // TODO: idea: multiplication in removeNoise (multiply by beat values)
-//     beat beat_dur = removeNoise();
-
-//     Meaning meaning;
-
-//     if (PREV_BIT == 1) {
-//     	if (beat_dur == 1) {
-//     		meaning = Meaning::DOT;
-//     	} else if (beat_dur == 3){
-//     		meaning = Meaning::DASH;
-//     	} else {
-//     		meaning = Meaning::UNKNOWN;
-//     	}
-//     } else {
-//     	if (beat_dur == 1) {
-// 			meaning = Meaning::NEXT_SYMBOL;
-// 		} else if (beat_dur == 3){
-// 			meaning = Meaning::NEXT_LETTER;
-// 		} else if (beat_dur == 7) {
-// 			meaning = Meaning::NEXT_WORD;
-// 		} else {
-// 			meaning = Meaning::UNKNOWN;
-// 		}
-//     }
-
-//     return meaning;
-// }
-
-// TODO: when returned the value is now some value offset from chr('a') 
+// TODO:
 void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, hls::stream<OUT_LETTER>& outLetter) {
 #pragma HLS TOP name=processNextBit
 #pragma HLS INTERFACE axis port=inBit
@@ -160,10 +98,6 @@ void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, hls::stream<OUT
 
 	IN_BIT input;
 	OUT_LETTER output;
-
-    // TODO: if LETTERS returns some value (0-25) wihtin the alphabet, then remove all CHARS
-
-	// letter currentLetter = 0;
 
 	bit prevBit = 0;
 
@@ -187,7 +121,7 @@ void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, hls::stream<OUT
 			}
 
 			// Meaning meaning = parsePrevInputs();
-			beat beat_dur = removeNoise();
+			beat beat_dur = removeNoise(BEAT_DURATION);
 			
 			if (prevBit == 1) {
 				if (beat_dur == 1) {
@@ -207,8 +141,15 @@ void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, hls::stream<OUT
 					output.data = getLetter(letters);
 					outLetter.write(output);
 
-					output.data = 0;
-					outLetter.write(output);
+					OUT_LETTER space;
+					space.keep = input.keep;
+					space.strb = input.strb;
+					space.dest = input.dest;
+					space.id = input.id;
+					space.user = input.user;
+					space.last = 0;
+					space.data = 31;
+					outLetter.write(space);
 				}
 			}
 
