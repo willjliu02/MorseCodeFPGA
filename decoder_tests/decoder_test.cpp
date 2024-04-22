@@ -13,9 +13,12 @@ using namespace std;
 
 #define ZERO short('0')
 #define TO_LOW (short('a') - short('A'))
-typedef ap_uint<1> bit;
-typedef short beat;
-typedef ap_uint<5> letter;
+//typedef ap_uint<1> bit;
+//typedef short beat;
+//typedef ap_uint<5> letter;
+typedef int bit;
+typedef int letter;
+typedef int beat;
 typedef ap_axis<32,1,1,1> IN_BIT;
 typedef ap_axis<32,1,1,1> OUT_LETTER;
 
@@ -26,7 +29,7 @@ letter LETTERS[] = {5, 20, 9, 1, 14, 13, 19, 21, 18, 23, 4, 11, 7, 15, 8, 22, 6,
 void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, hls::stream<OUT_LETTER>& outLetter);
 
 // make a process test method that runs all the info in
-int testProcess(char* inputName, char* goldenName){
+int testProcess(string inputName, string goldenName){
 	hls::stream<IN_BIT> inBit;
 	hls::stream<OUT_LETTER> outLetter;
 	IN_BIT in_tmp;

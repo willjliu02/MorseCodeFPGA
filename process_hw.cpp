@@ -200,11 +200,11 @@ void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, hls::stream<OUT
 			} else {
 				if (beat_dur == 3){
 					// next letter
-					output.data = get_letter(letters);
+					output.data = getLetter(letters);
 					outLetter.write(output);
 				} else if (beat_dur == 7) {
 					// next word
-					output.data = get_letter(letters);
+					output.data = getLetter(letters);
 					outLetter.write(output);
 
 					output.data = 0;
@@ -215,7 +215,7 @@ void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, hls::stream<OUT
 			// do nothing if unknown 
 
 			if (input.last) {
-				output.data = finalize(letters)
+				output.data = finalize(letters);
 				break;
 			}
 
