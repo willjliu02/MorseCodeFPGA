@@ -25,13 +25,13 @@ void filt (hls::stream<AXI_VAL>& y, coef_t c[N], hls::stream<AXI_VAL>& x, int sa
   // Example: Generate coefficients
   // coef_t taps[N] = {0,-10,-9,23,56,63,56,23,-9,-10,0};
   // For demonstration purpose, you need to replace this with your bandpass filter design
-	float lowcut = 300; //Low cutoff frequency
-	float highcut = 500;  // High cutoff frequency
-	float nyquist = 0.5 * sampling_rate;
-	float low = lowcut / nyquist;
-	float high = highcut / nyquist;
+	int lowcut = 300; //Low cutoff frequency
+	int highcut = 500;  // High cutoff frequency
+	int nyquist = 0.5 * sampling_rate;
+	int low = lowcut / nyquist;
+	int high = highcut / nyquist;
 
-	for (int i = 0; i < N; i++) {
+	Unroll_Loop1:for (int i = 0; i < N; i++) {
 
 	    if (i - N / 2 == 0) {
 
@@ -43,7 +43,7 @@ void filt (hls::stream<AXI_VAL>& y, coef_t c[N], hls::stream<AXI_VAL>& x, int sa
 	        }
 	    }
 
-  while(1) {
+  Shift_Reg:while(1) {
     static data_t shift_reg[N];
     acc_t acc;
     data_t data;
