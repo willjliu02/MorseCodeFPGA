@@ -23,10 +23,10 @@ typedef ap_axis<32,1,1,1> IN_BIT;
 typedef ap_axis<32,1,1,1> OUT_LETTER;
 
 //letter MAX_LETTER = 28;
-
+beat BEAT_DURATION = 1;
 letter LETTERS[] = {5, 20, 9, 1, 14, 13, 19, 21, 18, 23, 4, 11, 7, 15, 8, 22, 6, 32, 12, 32, 16, 10, 2, 24, 3, 25, 26, 17};
 
-void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, hls::stream<OUT_LETTER>& outLetter);
+void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, beat beat_duration, hls::stream<OUT_LETTER>& outLetter);
 
 // make a process test method that runs all the info in
 int testProcess(string inputName, string goldenName){
@@ -71,7 +71,7 @@ int testProcess(string inputName, string goldenName){
     in_tmp.last = 1;
     inBit.write(in_tmp);
 
-    processNextBit(inBit, LETTERS, outLetter);
+    processNextBit(inBit, LETTERS, BEAT_DURATION, outLetter);
 
     bool hasErrors = false;
 

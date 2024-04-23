@@ -89,10 +89,11 @@ beat removeNoise(beat beat_duration) {
 }
 
 // TODO:
-void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, hls::stream<OUT_LETTER>& outLetter) {
+void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, beat beat_duration, hls::stream<OUT_LETTER>& outLetter) {
 #pragma HLS TOP name=processNextBit
 #pragma HLS INTERFACE axis port=inBit
 #pragma HLS INTERFACE axis port=outLetter
+#pragma HLS INTERFACE s_axilite port=beat_duration
 #pragma HLS INTERFACE m_axi depth=28 port=letters
 #pragma HLS INTERFACE ap_ctrl_none port=return
 
@@ -121,7 +122,7 @@ void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, hls::stream<OUT
 			}
 
 			// Meaning meaning = parsePrevInputs();
-			beat beat_dur = removeNoise(BEAT_DURATION);
+			beat beat_dur = removeNoise(beat_duration);
 			
 			if (prevBit == 1) {
 				if (beat_dur == 1) {
