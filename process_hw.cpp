@@ -18,7 +18,7 @@ typedef int bit;
 typedef int letter;
 typedef int beat;
 // TODO: maybe consider making 2 different axi_val values to have a 1 bit input stream and a smaller than 32 output stream
-typedef ap_axis<32,1,1,1> IN_BIT;
+typedef ap_axis<32,1,1,1> IN_DATA;
 typedef ap_axis<32,1,1,1> OUT_LETTER;
 
 static int NUM_OF_BITS = 0;
@@ -27,8 +27,7 @@ static int NUM_OF_BITS = 0;
 static letter MAX_LETTER = 28;
 // 31 is a space
 static letter CURRENT_LETTER = 0;
-static int BEAT_ERROR_RANGE = 3; // describes the 2^-BEAT_ERROR_RANGE error
-static int BEAT_DURATION = 1;
+static int BEAT_ERROR_RANGE = 3;
 
 /* ------------------------------------------------------------------------ */
 /* ----------------------------- LETTER STATE ----------------------------- */
@@ -89,22 +88,26 @@ beat removeNoise(beat beat_duration) {
 }
 
 // TODO:
-void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, beat beat_duration, hls::stream<OUT_LETTER>& outLetter) {
+void processNextBit(hls::stream<IN_DATA>& inData, letter *letters, hls::stream<OUT_LETTER>& outLetter) {
 #pragma HLS TOP name=processNextBit
-#pragma HLS INTERFACE axis port=inBit
+#pragma HLS INTERFACE axis port=inData
 #pragma HLS INTERFACE axis port=outLetter
-#pragma HLS INTERFACE s_axilite port=beat_duration
 #pragma HLS INTERFACE m_axi depth=28 port=letters
 #pragma HLS INTERFACE ap_ctrl_none port=return
 
-	IN_BIT input;
+	IN_DATA input;
 	OUT_LETTER output;
 
 	bit prevBit = 0;
 
+	inData.read(input); // is the beat duration for the rest of the stream
+
+	beat beatDur = input.data.to_int();
+
     while (true) {
-#pragma HLS PIPELINE II=3
-    	inBit.read(input);
+//#pragma HLS PIPELINE II=12
+#pragma HLS PIPELINE off
+    	inData.read(input);
 		bit bitVal = (bit)input.data;
 
 		output.keep = input.keep;
@@ -112,6 +115,7 @@ void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, beat beat_durat
 		output.dest = input.dest;
 		output.id = input.id;
 		output.user = input.user;
+		output.data = 31;
 		output.last = 0;
 
 		if (!input.last && bitVal == prevBit) {
@@ -122,7 +126,7 @@ void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, beat beat_durat
 			}
 
 			// Meaning meaning = parsePrevInputs();
-			beat beat_dur = removeNoise(beat_duration);
+			beat beat_dur = removeNoise(beatDur);
 			
 			if (prevBit == 1) {
 				if (beat_dur == 1) {
@@ -136,21 +140,9 @@ void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, beat beat_durat
 				if (beat_dur == 3){
 					// next letter
 					output.data = getLetter(letters);
-					outLetter.write(output);
 				} else if (beat_dur == 7) {
 					// next word
 					output.data = getLetter(letters);
-					outLetter.write(output);
-
-					OUT_LETTER space;
-					space.keep = input.keep;
-					space.strb = input.strb;
-					space.dest = input.dest;
-					space.id = input.id;
-					space.user = input.user;
-					space.last = 0;
-					space.data = 31;
-					outLetter.write(space);
 				}
 			}
 
@@ -165,12 +157,13 @@ void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, beat beat_durat
 			NUM_OF_BITS = 1;
 		}
 
+		outLetter.write(output);
+
 		if (input.last) {
 			break;
 		}
     }
 
     output.last = 1;
-//    output.data = 31;
 	outLetter.write(output);
 }

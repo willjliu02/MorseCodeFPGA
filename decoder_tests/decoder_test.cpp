@@ -19,27 +19,35 @@ using namespace std;
 typedef int bit;
 typedef int letter;
 typedef int beat;
-typedef ap_axis<32,1,1,1> IN_BIT;
+typedef ap_axis<32,1,1,1> IN_DATA;
 typedef ap_axis<32,1,1,1> OUT_LETTER;
 
 //letter MAX_LETTER = 28;
 beat BEAT_DURATION = 1;
 letter LETTERS[] = {5, 20, 9, 1, 14, 13, 19, 21, 18, 23, 4, 11, 7, 15, 8, 22, 6, 32, 12, 32, 16, 10, 2, 24, 3, 25, 26, 17};
 
-void processNextBit(hls::stream<IN_BIT>& inBit, letter *letters, beat beat_duration, hls::stream<OUT_LETTER>& outLetter);
+void processNextBit(hls::stream<IN_DATA>& inData, letter *letters, hls::stream<OUT_LETTER>& outLetter);
 
 // make a process test method that runs all the info in
 int testProcess(string inputName, string goldenName){
-	hls::stream<IN_BIT> inBit;
+	hls::stream<IN_DATA> inData;
 	hls::stream<OUT_LETTER> outLetter;
-	IN_BIT in_tmp;
+	IN_DATA in_tmp;
 	OUT_LETTER out_tmp;
     char inputLine[100], outputLine[100], goldenLine[100];
 
     ifstream inputFile, outputFile, goldenFile;
     inputFile.open(inputName, ifstream::in);
     goldenFile.open(goldenName, ifstream::in);
-
+    
+    in_tmp.data = BEAT_DURATION;
+	in_tmp.keep = 1;
+	in_tmp.strb = 1;
+	in_tmp.user = 1;
+	in_tmp.last = 0;
+	in_tmp.id = 0;
+	in_tmp.dest = 1;
+    
     // gets all the values along the whitespace
     while (inputFile >> inputLine) {
         for (short i = 0; i < 100; i++) {
@@ -63,15 +71,15 @@ int testProcess(string inputName, string goldenName){
             in_tmp.id = 0;
             in_tmp.dest = 1;
 
-            inBit.write(in_tmp);
+            inData.write(in_tmp);
         }
     } 
 
     in_tmp.data = (bit)1;
     in_tmp.last = 1;
-    inBit.write(in_tmp);
+    inData.write(in_tmp);
 
-    processNextBit(inBit, LETTERS, BEAT_DURATION, outLetter);
+    processNextBit(inData, LETTERS, outLetter);
 
     bool hasErrors = false;
 
@@ -84,8 +92,10 @@ int testProcess(string inputName, string goldenName){
 				char outLetter;
 				if (data == 0) {
 					outLetter = ' ';
-				} else {
+				} else if (data != 31) {
 					outLetter = (char)(data + TO_LOW - 1);
+				} else {
+					continue;
 				}
 
 				cout << out_tmp.data.to_int() + TO_LOW << endl;
