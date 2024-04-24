@@ -10,13 +10,11 @@ typedef int acc_t;
 #define N 4
 #define PI 3.14159265358979323846
 
-void filt (hls::stream<AXI_VAL>& y, coef_t c[N], hls::stream<AXI_VAL>& x, int sampling_rate, int bandwidth, int max_freq) {
-#pragma HLS INTERFACE m_axi depth=11 port=c
+void filt (hls::stream<AXI_VAL>& y, coef_t c[N], hls::stream<AXI_VAL>& x, int sampling_rate) {
+#pragma HLS INTERFACE m_axi depth=4 port=c
 #pragma HLS INTERFACE axis register both port=x
 #pragma HLS INTERFACE axis register both port=y
 #pragma HLS INTERFACE s_axilite port=sampling_rate
-#pragma HLS INTERFACE s_axilite port=bandwidth
-#pragma HLS INTERFACE s_axilite port=max_freq
 #pragma HLS INTERFACE ap_ctrl_none port=return
 
   // Calculate filter coefficients based on the given parameters
