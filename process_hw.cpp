@@ -27,7 +27,7 @@ static int NUM_OF_BITS = 0;
 static letter MAX_LETTER = 28;
 // 31 is a space
 static letter CURRENT_LETTER = 0;
-static int BEAT_ERROR_RANGE = 3;
+static int BEAT_ERROR_RANGE = 3; // describes the 2^-BEAT_ERROR_RANGE error
 
 /* ------------------------------------------------------------------------ */
 /* ----------------------------- LETTER STATE ----------------------------- */
@@ -105,8 +105,7 @@ void processNextBit(hls::stream<IN_DATA>& inData, letter *letters, hls::stream<O
 	beat beatDur = input.data.to_int();
 
     while (true) {
-//#pragma HLS PIPELINE II=12
-#pragma HLS PIPELINE off
+#pragma HLS PIPELINE II=3
     	inData.read(input);
 		bit bitVal = (bit)input.data;
 
@@ -115,7 +114,6 @@ void processNextBit(hls::stream<IN_DATA>& inData, letter *letters, hls::stream<O
 		output.dest = input.dest;
 		output.id = input.id;
 		output.user = input.user;
-		output.data = 31;
 		output.last = 0;
 
 		if (!input.last && bitVal == prevBit) {
@@ -140,9 +138,21 @@ void processNextBit(hls::stream<IN_DATA>& inData, letter *letters, hls::stream<O
 				if (beat_dur == 3){
 					// next letter
 					output.data = getLetter(letters);
+					outLetter.write(output);
 				} else if (beat_dur == 7) {
 					// next word
 					output.data = getLetter(letters);
+					outLetter.write(output);
+
+					OUT_LETTER space;
+					space.keep = input.keep;
+					space.strb = input.strb;
+					space.dest = input.dest;
+					space.id = input.id;
+					space.user = input.user;
+					space.last = 0;
+					space.data = 31;
+					outLetter.write(space);
 				}
 			}
 
@@ -157,13 +167,12 @@ void processNextBit(hls::stream<IN_DATA>& inData, letter *letters, hls::stream<O
 			NUM_OF_BITS = 1;
 		}
 
-		outLetter.write(output);
-
 		if (input.last) {
 			break;
 		}
     }
 
     output.last = 1;
+//    output.data = 31;
 	outLetter.write(output);
 }
