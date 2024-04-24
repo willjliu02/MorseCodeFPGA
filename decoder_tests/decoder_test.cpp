@@ -34,20 +34,20 @@ int testProcess(string inputName, string goldenName){
 	hls::stream<OUT_LETTER> outLetter;
 	IN_DATA in_tmp;
 	OUT_LETTER out_tmp;
-    char inputLine[100], outputLine[100], goldenLine[100];
+	char inputLine[100], outputLine[100], goldenLine[100];
 
-    ifstream inputFile, outputFile, goldenFile;
-    inputFile.open(inputName, ifstream::in);
-    goldenFile.open(goldenName, ifstream::in);
-    
-    in_tmp.data = BEAT_DURATION;
+	ifstream inputFile, outputFile, goldenFile;
+	inputFile.open(inputName, ifstream::in);
+	goldenFile.open(goldenName, ifstream::in);
+
+	in_tmp.data = BEAT_DURATION;
 	in_tmp.keep = 1;
 	in_tmp.strb = 1;
 	in_tmp.user = 1;
 	in_tmp.last = 0;
 	in_tmp.id = 0;
 	in_tmp.dest = 1;
-    
+
     // gets all the values along the whitespace
     while (inputFile >> inputLine) {
         for (short i = 0; i < 100; i++) {
@@ -92,10 +92,8 @@ int testProcess(string inputName, string goldenName){
 				char outLetter;
 				if (data == 0) {
 					outLetter = ' ';
-				} else if (data != 31) {
-					outLetter = (char)(data + TO_LOW - 1);
 				} else {
-					continue;
+					outLetter = (char)(data + TO_LOW - 1);
 				}
 
 				cout << out_tmp.data.to_int() + TO_LOW << endl;
