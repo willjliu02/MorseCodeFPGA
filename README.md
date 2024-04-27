@@ -18,10 +18,24 @@ This is the decoder aspect of the morse code translator, so it takes information
 converts it into human readable text. Currently, the only type of input that this decoder takes is a bit file, 
 where a 1 is an on signal and a 0 is an off signal. 
 
-### How To:
+### How to Filter:
+1) Start off of the board
+2) pip install pydub
+3) Using the AudioSegment class open the audio file
+4) Using the array_of_samples function in the AudioSegment, wrap that in a numpy array of dtype = float
+5) Use numpy.save to save the array to a file
+6) Move to the board
+7) Load the saved numpy file into filter.ipynb
+8) Run all the blocks above the for loop that has timing around it
+9) Run the for loop to stream in all the data and fill the filtered_signal buffer
+
+### How To Decoder:
 1) Create a bit file that contains morse code
 2) Run all boxes down to the translate function
-3) Call the translate function on the name of the bit file. The output will be printed to the console. If you'd like to change that, then send in the name of an output file.
+3) Choose the decoder type. (For the hardware overlay, you will have to also create the overlay, which can be found in decoder_hw/decoder)
+4) Instantiate a beat decoder (the most optimized values were the ones used in the "beat_decoder" function above the tests)
+5) Create the actual decoder by passing in the beat decoder.
+6) Call the translate function on the name of the bit file and the beat decoder. The output will be printed to the console. If you'd like to change that, then send in the name of an output file.
 
 ### PL Implementation:
 The function that was moved over from PS to PL was the processNextBit function. The hardware code can be seen in the process_hw.cpp program.The status of this part is that the code is able to be synthesized in HLS, but has run into a memory dependency with one of the AXI classes. 
